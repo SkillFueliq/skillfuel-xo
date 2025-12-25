@@ -1,0 +1,458 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SkillFuel XO</title>
+
+<style>
+:root{
+  --bg:#000;
+  --white:#fff;
+  --orange:#f26a1b;
+  --line: rgba(255,255,255,1);
+  --card: rgba(255,255,255,.08);
+  --border: rgba(255,255,255,.2);
+  --muted: rgba(255,255,255,.75);
+}
+
+*{box-sizing:border-box;font-family:system-ui,Segoe UI,Arial}
+body{
+  margin:0;
+  min-height:100vh;
+  background:var(--bg);
+  color:var(--white);
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
+
+.wrap{
+  width:min(760px,95vw);
+  text-align:center;
+  padding:18px 10px 24px;
+}
+
+.top{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:14px;
+  margin-bottom:10px;
+}
+
+.brand img{
+  width:min(460px,95%);
+  height:auto;
+  display:block;
+  filter:drop-shadow(0 8px 20px rgba(0,0,0,.6));
+}
+
+.mute{
+  background:none;
+  border:1px solid var(--border);
+  color:#fff;
+  padding:10px 12px;
+  border-radius:12px;
+  cursor:pointer;
+  min-width:48px;
+}
+.mute:active{transform:scale(.98)}
+
+.modes{
+  display:flex;
+  justify-content:center;
+  gap:12px;
+  margin:10px 0 6px;
+  flex-wrap:wrap;
+}
+
+.mode{
+  padding:10px 14px;
+  border-radius:999px;
+  border:1px solid var(--border);
+  cursor:pointer;
+  user-select:none;
+}
+.mode.active{
+  border-color:var(--orange);
+  box-shadow:0 0 0 2px rgba(242,106,27,.25) inset;
+}
+
+/* ===== BOARD (خطوط ثابتة) ===== */
+.board{
+  width:min(640px,92vw);
+  aspect-ratio:1/1;
+  margin:18px auto 12px;
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  grid-template-rows:repeat(3,1fr);
+
+  background:
+    linear-gradient(var(--line),var(--line)) 33.333% 0/4px 100% no-repeat,
+    linear-gradient(var(--line),var(--line)) 66.666% 0/4px 100% no-repeat,
+    linear-gradient(var(--line),var(--line)) 0 33.333%/100% 4px no-repeat,
+    linear-gradient(var(--line),var(--line)) 0 66.666%/100% 4px no-repeat;
+}
+
+.cell{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:clamp(72px,14vw,130px);
+  cursor:pointer;
+  user-select:none;
+  -webkit-tap-highlight-color: transparent;
+}
+.cell.x{color:#cfcfcf}
+.cell.o{color:var(--orange)}
+
+.score{
+  display:flex;
+  justify-content:center;
+  gap:12px;
+  flex-wrap:wrap;
+  margin-top:6px;
+}
+
+.box{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:10px 16px;
+  min-width:160px;
+}
+
+.label{
+  font-size:12px;
+  color:var(--muted);
+  letter-spacing:.4px;
+  margin-bottom:6px;
+}
+.num{
+  font-size:22px;
+  font-weight:800;
+}
+
+.status{
+  margin:12px 0 2px;
+  min-height:26px;
+  color:var(--muted);
+}
+.status strong{color:var(--orange)}
+
+.controls{
+  display:flex;
+  justify-content:center;
+  gap:12px;
+  margin-top:10px;
+  flex-wrap:wrap;
+}
+
+button{
+  background:none;
+  border:1px solid var(--border);
+  color:#fff;
+  padding:10px 14px;
+  border-radius:12px;
+  cursor:pointer;
+}
+button.primary{border-color:var(--orange)}
+button:active{transform:scale(.98)}
+</style>
+</head>
+
+<body>
+<div class="wrap">
+
+  <div class="top">
+    <div class="brand">
+      <img src="skillfuel.png" alt="SkillFuel">
+    </div>
+    <button id="muteBtn" class="mute" title="Mute / Unmute">🔊</button>
+  </div>
+
+  <div class="modes">
+    <div id="modeCpu" class="mode active">1P لاعب ضد كمبيوتر (AI)</div>
+    <div id="mode2p" class="mode">2P لاعب ضد لاعب</div>
+  </div>
+
+  <div id="board" class="board" aria-label="Tic Tac Toe board">
+    <div class="cell" data-i="0"></div><div class="cell" data-i="1"></div><div class="cell" data-i="2"></div>
+    <div class="cell" data-i="3"></div><div class="cell" data-i="4"></div><div class="cell" data-i="5"></div>
+    <div class="cell" data-i="6"></div><div class="cell" data-i="7"></div><div class="cell" data-i="8"></div>
+  </div>
+
+  <div class="score">
+    <div class="box">
+      <div class="label" id="labelX">PLAYER (X)</div>
+      <div class="num" id="sx">0</div>
+    </div>
+
+    <div class="box">
+      <div class="label">TIE</div>
+      <div class="num" id="st">0</div>
+    </div>
+
+    <div class="box">
+      <div class="label" id="labelO">COMPUTER (O)</div>
+      <div class="num" id="so">0</div>
+    </div>
+  </div>
+
+  <div id="status" class="status"></div>
+
+  <div class="controls">
+    <button id="resetBtn" class="primary">Reset round</button>
+    <button id="clearBtn">Clear scores</button>
+  </div>
+
+</div>
+
+<script>
+/* ===== State ===== */
+const X="X", O="O";
+let mode="cpu";          // cpu | 2p
+let current=X;           // turn
+let over=false;          // round ended?
+let boardState=Array(9).fill("");
+let score={x:0,o:0,t:0};
+
+/* بعد النهاية: أول ضغطة على اللوحة تعيد الجولة */
+let pendingNextRound = false;
+
+/* ===== Elements ===== */
+const boardEl=document.getElementById("board");
+const cells=[...document.querySelectorAll(".cell")];
+const statusEl=document.getElementById("status");
+const sxEl=document.getElementById("sx");
+const soEl=document.getElementById("so");
+const stEl=document.getElementById("st");
+const labelX=document.getElementById("labelX");
+const labelO=document.getElementById("labelO");
+const resetBtn=document.getElementById("resetBtn");
+const clearBtn=document.getElementById("clearBtn");
+const modeCpuBtn=document.getElementById("modeCpu");
+const mode2pBtn=document.getElementById("mode2p");
+const muteBtn=document.getElementById("muteBtn");
+
+/* ===== Sounds MP3 ===== */
+const S={
+  click:new Audio("sounds/click.mp3"),
+  win:new Audio("sounds/win.mp3"),
+  lose:new Audio("sounds/lose.mp3"),
+  tie:new Audio("sounds/tie.mp3"),
+  mode:new Audio("sounds/mode.mp3")
+};
+Object.values(S).forEach(a=>a.volume=0.75);
+
+let muted=false;
+function setMuted(v){
+  muted=v;
+  muteBtn.textContent = muted ? "🔇" : "🔊";
+  Object.values(S).forEach(a=>a.muted=muted);
+}
+function play(a){
+  if(muted) return;
+  try{ a.currentTime=0; a.play(); }catch(e){}
+}
+muteBtn.addEventListener("click",()=>setMuted(!muted));
+
+/* ===== Game logic ===== */
+const wins=[
+  [0,1,2],[3,4,5],[6,7,8],
+  [0,3,6],[1,4,7],[2,5,8],
+  [0,4,8],[2,4,6]
+];
+
+function checkWinner(s){
+  for(const [a,b,c] of wins){
+    if(s[a] && s[a]===s[b] && s[a]===s[c]) return s[a];
+  }
+  if(s.every(v=>v)) return "TIE";
+  return null;
+}
+
+function render(){
+  cells.forEach((cell,i)=>{
+    cell.textContent=boardState[i];
+    cell.classList.remove("x","o");
+    if(boardState[i]===X) cell.classList.add("x");
+    if(boardState[i]===O) cell.classList.add("o");
+  });
+  sxEl.textContent=score.x;
+  soEl.textContent=score.o;
+  stEl.textContent=score.t;
+}
+
+function setStatus(msg){ statusEl.innerHTML = msg || ""; }
+
+function resetRound(){
+  boardState = Array(9).fill("");
+  over = false;
+  pendingNextRound = false;
+  current = X;
+
+  if(mode==="2p"){
+    setStatus('دور: <strong>X</strong>');
+  }else{
+    setStatus("");
+  }
+  render();
+}
+
+function clearScores(){
+  score={x:0,o:0,t:0};
+  render();
+}
+
+/* ضع حركة */
+function place(i, player){
+  if(boardState[i] || over) return false;
+
+  boardState[i]=player;
+  render();
+
+  const res = checkWinner(boardState);
+  if(res){
+    endGame(res);
+    return true;
+  }
+
+  current = (player===X)?O:X;
+  if(mode==="2p"){
+    setStatus(`دور: <strong>${current}</strong>`);
+  }
+  return true;
+}
+
+function endGame(result){
+  over=true;
+  pendingNextRound = true;
+
+  if(result===X){
+    score.x++; play(S.win);
+    setStatus('فاز <strong>X</strong> ✅ — اضغط أي مربع حتى تبدي جولة جديدة');
+  }else if(result===O){
+    score.o++; play(mode==="cpu"?S.lose:S.win);
+    setStatus('فاز <strong>O</strong> ✅ — اضغط أي مربع حتى تبدي جولة جديدة');
+  }else{
+    score.t++; play(S.tie);
+    setStatus('تعادل 🤝 — اضغط أي مربع حتى تبدي جولة جديدة');
+  }
+  render();
+}
+
+/* ===== Unbeatable AI (Minimax) ===== */
+function availableMoves(s){
+  const m=[];
+  for(let i=0;i<9;i++) if(!s[i]) m.push(i);
+  return m;
+}
+function minimax(s, player){
+  const res = checkWinner(s);
+  if(res===O) return {score:10};
+  if(res===X) return {score:-10};
+  if(res==="TIE") return {score:0};
+
+  const moves=availableMoves(s);
+  const results=[];
+
+  for(const i of moves){
+    const next=s.slice();
+    next[i]=player;
+
+    const out=minimax(next, player===O?X:O);
+    const depthAdjust = (out.score===10)?-1 : (out.score===-10)?+1 : 0;
+
+    results.push({index:i, score: out.score + depthAdjust});
+  }
+
+  if(player===O){
+    return results.reduce((best,r)=> r.score>best.score?r:best, results[0]);
+  }else{
+    return results.reduce((best,r)=> r.score<best.score?r:best, results[0]);
+  }
+}
+
+function computerMove(){
+  if(over) return;
+  const best=minimax(boardState.slice(), O);
+  if(best && typeof best.index==="number"){
+    place(best.index, O);
+  }
+}
+
+/* ===== Cell click behavior ===== */
+cells.forEach(cell=>{
+  cell.addEventListener("click", ()=>{
+    const i = Number(cell.dataset.i);
+
+    // ✅ إذا الجولة خلصت: نفس الضغطة تبدي جولة جديدة وتحط X بالمكان
+    if(pendingNextRound){
+      play(S.mode); // صوت خفيف للجولة الجديدة
+      resetRound();
+
+      // بعد الريست نحط الحركة مباشرة
+      play(S.click);
+      if(mode==="cpu"){
+        place(i, X);
+        if(!over) setTimeout(computerMove, 160);
+      }else{
+        place(i, current); // current = X بعد reset
+      }
+      return;
+    }
+
+    // اللعبة شغالة طبيعي
+    play(S.click);
+
+    if(mode==="cpu"){
+      if(current!==X) return;
+      if(!place(i, X)) return;
+      if(!over) setTimeout(computerMove, 160);
+    }else{
+      place(i, current);
+    }
+  });
+});
+
+/* ===== Buttons ===== */
+resetBtn.addEventListener("click", ()=>{
+  resetRound();
+});
+
+clearBtn.addEventListener("click", ()=>{
+  clearScores();
+  resetRound();
+});
+
+/* ===== Mode switching ===== */
+function setMode(newMode){
+  play(S.mode);
+  mode = newMode;
+
+  modeCpuBtn.classList.toggle("active", mode==="cpu");
+  mode2pBtn.classList.toggle("active", mode==="2p");
+
+  if(mode==="cpu"){
+    labelX.textContent="PLAYER (X)";
+    labelO.textContent="COMPUTER (O)";
+  }else{
+    labelX.textContent="PLAYER 1 (X)";
+    labelO.textContent="PLAYER 2 (O)";
+  }
+
+  resetRound();
+}
+
+modeCpuBtn.addEventListener("click", ()=> setMode("cpu"));
+mode2pBtn.addEventListener("click", ()=> setMode("2p"));
+
+/* ===== Start ===== */
+setMuted(false);
+setMode("cpu");
+render();
+</script>
+</body>
+</html>
